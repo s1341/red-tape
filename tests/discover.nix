@@ -1,10 +1,10 @@
 # Tests for per-type scanning patterns (matching what modules do)
 let
-  discover = import ../lib/discover.nix;
+  prelude = import ./prelude.nix;
+  inherit (prelude) discover coreHostTypes;
   inherit (discover)
     scanDir
     scanHosts
-    coreHostTypes
     scanEntries
     scanSubdirs
     ;
@@ -12,7 +12,7 @@ let
 
   sort = builtins.sort builtins.lessThan;
 
-  fixtures = ../tests/fixtures;
+  inherit (prelude) fixtures;
 
   # Per-type scanning — mirrors what each module does internally
   scanPackages = src: scanEntries { dir = src + "/packages"; single = src + "/package.nix"; };

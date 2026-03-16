@@ -8,7 +8,8 @@ let
     ;
   inherit (helpers) entryPath;
   inherit (builders) buildModules;
-  inherit (discover) scanDir scanHosts coreHostTypes scanSubdirs;
+  inherit (prelude) coreHostTypes;
+  inherit (discover) scanDir scanHosts scanSubdirs;
 in
 {
   testScanCustomHostType = {

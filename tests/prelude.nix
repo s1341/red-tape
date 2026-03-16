@@ -63,6 +63,19 @@ let
     ;
   inherit (helpers) entryPath;
 
+  # Host type sentinels for scanning — matches modules/hosts.nix
+  coreHostTypes = [
+    {
+      type = "custom";
+      file = "default.nix";
+    }
+    {
+      type = "nixos";
+      file = "configuration.nix";
+    }
+  ];
+
+  # Host type builders for testing
   defaultHostTypes = {
     custom = {
       outputKey = "nixosConfigurations";
@@ -231,5 +244,6 @@ in
     discover
     helpers
     builders
+    coreHostTypes
     ;
 }

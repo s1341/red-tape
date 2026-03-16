@@ -1,6 +1,18 @@
 # red-tape/hosts — Discover and build host configurations
 let
-  inherit (import ../lib/discover.nix) scanHosts coreHostTypes;
+  inherit (import ../lib/discover.nix) scanHosts;
+
+  # Host type sentinels — checked in order, first match wins.
+  coreHostTypes = [
+    {
+      type = "custom";
+      file = "default.nix";
+    }
+    {
+      type = "nixos";
+      file = "configuration.nix";
+    }
+  ];
   inherit (builtins)
     addErrorContext
     attrNames

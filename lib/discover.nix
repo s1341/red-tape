@@ -116,18 +116,6 @@ let
         )
       );
 
-  # Host type sentinels — checked in order, first match wins.
-  coreHostTypes = [
-    {
-      type = "custom";
-      file = "default.nix";
-    }
-    {
-      type = "nixos";
-      file = "configuration.nix";
-    }
-  ];
-
   # ── Scanning helpers ────────────────────────────────────────────────
 
   optional =
@@ -197,7 +185,6 @@ in
   inherit
     scanDir
     scanHosts
-    coreHostTypes
     optional
     optionalDefault
     optionalSingle

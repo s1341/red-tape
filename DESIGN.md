@@ -20,7 +20,6 @@ Scanning primitives used by individual modules. No evaluation happens here — o
 - **`scanHosts hostsDir hostTypes`** — Scans `hosts/` subdirectories, matching against an ordered list of `{ type, file }` specs. First match wins.
 - **`scanEntries { dir?, single?, singleName? }`** — Scans a directory for entries with optional single-file fallback. Used by packages, devshells, and checks.
 - **`scanSubdirs path f`** — Lists subdirectories of a path and applies `f` to each. Used by modules (`scanSubdirs p scanDir`) and templates (`scanSubdirs p (p: { path = p; })`).
-- **`coreHostTypes`** — Built-in host type specs: `nixos` (configuration.nix), `custom` (default.nix).
 
 ### modules/
 
