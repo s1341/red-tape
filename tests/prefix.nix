@@ -3,7 +3,12 @@ let
   inherit (prelude) discover fixtures;
   inherit (discover) scanEntries;
 
-  scanPackages = src: scanEntries { dir = src + "/packages"; single = src + "/package.nix"; };
+  scanPackages =
+    src:
+    scanEntries {
+      dir = src + "/packages";
+      single = src + "/package.nix";
+    };
 in
 {
   testPrefixDiscovery = {

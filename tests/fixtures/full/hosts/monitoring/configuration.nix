@@ -11,5 +11,8 @@
     enable = true;
     settings.server.http_port = 3000;
   };
-  networking.firewall.allowedTCPPorts = [ 9090 3000 ];
+  networking.firewall.allowedTCPPorts = [
+    9090
+    3000
+  ];
 }

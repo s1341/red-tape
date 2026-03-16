@@ -14,7 +14,9 @@ in
     { results, ... }:
     let
       src = results.scan.resolvedSrc;
-      found = scanSubdirs (src + "/templates") (path: { inherit path; });
+      found = scanSubdirs (src + "/templates") (path: {
+        inherit path;
+      });
       templates = mapAttrs (
         name: e:
         let

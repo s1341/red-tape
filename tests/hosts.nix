@@ -1,7 +1,12 @@
 # Tests for host building
 let
   prelude = import ./prelude.nix;
-  inherit (prelude) discover builders fixtures coreHostTypes;
+  inherit (prelude)
+    discover
+    builders
+    fixtures
+    coreHostTypes
+    ;
   inherit (discover) scanHosts;
   inherit (builders) buildHosts;
 

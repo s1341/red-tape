@@ -60,10 +60,15 @@ let
   };
 in
 {
-  redTape = builtins.removeAttrs default.modules [ "modules" "contrib" ] // {
-    inherit default;
-    home-manager = import ../contrib/home-manager.nix;
-    darwin = import ../contrib/darwin.nix;
-    system-manager = import ../contrib/system-manager.nix;
-  };
+  redTape =
+    builtins.removeAttrs default.modules [
+      "modules"
+      "contrib"
+    ]
+    // {
+      inherit default;
+      home-manager = import ../contrib/home-manager.nix;
+      darwin = import ../contrib/darwin.nix;
+      system-manager = import ../contrib/system-manager.nix;
+    };
 }

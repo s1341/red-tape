@@ -23,8 +23,14 @@ let
   evalFixture =
     src:
     let
-      packages = scanEntries { dir = src + "/packages"; single = src + "/package.nix"; };
-      devshells = scanEntries { dir = src + "/devshells"; single = src + "/devshell.nix"; };
+      packages = scanEntries {
+        dir = src + "/packages";
+        single = src + "/package.nix";
+      };
+      devshells = scanEntries {
+        dir = src + "/devshells";
+        single = src + "/devshell.nix";
+      };
       checks = scanEntries { dir = src + "/checks"; };
       formatterPath =
         let

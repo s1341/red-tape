@@ -17,7 +17,10 @@ in
     { results, ... }:
     let
       src = results.scan.resolvedSrc;
-      found = scanEntries { dir = src + "/devshells"; single = src + "/devshell.nix"; };
+      found = scanEntries {
+        dir = src + "/devshells";
+        single = src + "/devshell.nix";
+      };
     in
     {
       devShells = buildAll results.scope.scope found;

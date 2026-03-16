@@ -160,24 +160,22 @@ let
       ) { } (attrNames loaded);
       autoChecks =
         system:
-        listToAttrs (
-          filter (x: x != null) (
-            map (
-              n:
-              let
-                h = loaded.${n};
-                s = h.value.config.nixpkgs.hostPlatform.system or null;
-              in
-              if s == system then
-                {
-                  name = "${h.type}-${n}";
-                  value = h.value.config.system.build.toplevel;
-                }
-              else
-                null
-            ) (attrNames loaded)
-          )
-        ) { } (attrNames byOutputKey);
+        listToAttrs (filter (x: x != null) (
+          map (
+            n:
+            let
+              h = loaded.${n};
+              s = h.value.config.nixpkgs.hostPlatform.system or null;
+            in
+            if s == system then
+              {
+                name = "${h.type}-${n}";
+                value = h.value.config.system.build.toplevel;
+              }
+            else
+              null
+          ) (attrNames loaded)
+        )) { } (attrNames byOutputKey);
     in
     byOutputKey // { inherit autoChecks; };
 

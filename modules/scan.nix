@@ -51,6 +51,11 @@ in
         (removeAttrs options.inputs [ "self" ]) // (if self != null then { inherit self; } else { });
     in
     {
-      inherit resolvedSrc src self inputs;
+      inherit
+        resolvedSrc
+        src
+        self
+        inputs
+        ;
     };
 }

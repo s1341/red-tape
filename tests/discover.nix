@@ -15,8 +15,18 @@ let
   inherit (prelude) fixtures;
 
   # Per-type scanning — mirrors what each module does internally
-  scanPackages = src: scanEntries { dir = src + "/packages"; single = src + "/package.nix"; };
-  scanDevshells = src: scanEntries { dir = src + "/devshells"; single = src + "/devshell.nix"; };
+  scanPackages =
+    src:
+    scanEntries {
+      dir = src + "/packages";
+      single = src + "/package.nix";
+    };
+  scanDevshells =
+    src:
+    scanEntries {
+      dir = src + "/devshells";
+      single = src + "/devshell.nix";
+    };
   scanChecks = src: scanEntries { dir = src + "/checks"; };
 
   scanFormatter =
@@ -27,7 +37,11 @@ let
     if pathExists p then p else null;
 
   scanModules = src: scanSubdirs (src + "/modules") scanDir;
-  scanTemplates = src: scanSubdirs (src + "/templates") (path: { inherit path; });
+  scanTemplates =
+    src:
+    scanSubdirs (src + "/templates") (path: {
+      inherit path;
+    });
 
   scanLib =
     src:

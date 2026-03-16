@@ -69,6 +69,7 @@ in
         if ac != null then ac system else { };
     in
     {
-      checks = hostAutoChecks // pkgChecks // { pkgs-formatter = formatter; } // devshellChecks // userChecks;
+      checks =
+        hostAutoChecks // pkgChecks // { pkgs-formatter = formatter; } // devshellChecks // userChecks;
     };
 }

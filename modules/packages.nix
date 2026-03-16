@@ -21,7 +21,10 @@ in
     let
       s = results.scope;
       src = results.scan.resolvedSrc;
-      found = scanEntries { dir = src + "/packages"; single = src + "/package.nix"; };
+      found = scanEntries {
+        dir = src + "/packages";
+        single = src + "/package.nix";
+      };
     in
     {
       packages = filterPlatforms s.system (

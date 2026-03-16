@@ -38,6 +38,8 @@
           }
         );
 
+      formatter = eachSystem (pkgs: pkgs.nixfmt-tree);
+
       devShells = eachSystem (pkgs: {
         default = pkgs.mkShell {
           packages = [
