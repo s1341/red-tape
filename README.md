@@ -164,12 +164,12 @@ red-tape.mkFlake {
 
 ## Comparison
 
-| | red-tape | blueprint | flake-parts |
-|---|---|---|---|
-| Approach | Filesystem conventions | Filesystem conventions | Module options |
-| Built on | [adios-flake](https://github.com/Mic92/adios-flake) | None (pure functions) | NixOS module system |
-| Community | New & small | Medium | Large |
-| Extensible | [adios](https://github.com/adisbladis/adios) modules | No | NixOS modules |
+| | red-tape | blueprint | flake-parts | flake-incompat |
+|---|---|---|---|---|
+| Approach | Filesystem conventions | Filesystem conventions | Module options | Dependency injection |
+| Built on | [adios-flake](https://github.com/Mic92/adios-flake) | None (pure functions) | NixOS module system | None (pure functions) |
+| Community | New & small | Medium | Large | New & small |
+| Extensible | [adios](https://github.com/adisbladis/adios) modules | No | NixOS modules | Custom `systemFields` / `attrProcessors` |
 
 ## License
 
