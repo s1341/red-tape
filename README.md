@@ -164,7 +164,7 @@ red-tape.mkFlake {
 
 ## Comparison
 
-| | red-tape | blueprint | flake-parts | flake-incompat |
+| | [red-tape](https://github.com/phaer/red-tape) | [blueprint](https://github.com/numtide/blueprint) | [flake-parts](https://flake.parts) | [flake-incompat](https://github.com/adisbladis/flake-incompat) |
 |---|---|---|---|---|
 | Approach | Filesystem conventions | Filesystem conventions | Module options | Dependency injection |
 | Built on | [adios-flake](https://github.com/Mic92/adios-flake) | None (pure functions) | NixOS module system | None (pure functions) |
