@@ -37,6 +37,8 @@ let
       };
     };
 
+  isContrib = m: builtins.isAttrs m && m ? impl;
+
   mkFlake =
     {
       inputs,
@@ -54,6 +56,10 @@ let
       config ? { },
       flake ? { },
     }:
+    let
+      contribs = builtins.filter isContrib modules;
+      passthrough = builtins.filter (m: !isContrib m) modules;
+    in
     adiosFlakeLib.mkFlake {
       inherit
         inputs
@@ -62,7 +68,7 @@ let
         perSystem
         flake
         ;
-      modules = [ (mkRootModule modules) ];
+      modules = [ (mkRootModule contribs) ] ++ passthrough;
       config = {
         "red-tape/project" = {
           inherit src self;
