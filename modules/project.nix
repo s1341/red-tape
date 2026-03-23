@@ -1,4 +1,4 @@
-# red-tape/scan — Shared flake context (src, self, inputs)
+# red-tape/project — Project-level flake context (src, self, inputs)
 #
 # Individual modules handle their own filesystem discovery.
 # Result: { resolvedSrc, src, self, inputs }
@@ -6,7 +6,7 @@ let
   inherit (builtins) isPath removeAttrs;
 in
 {
-  name = "scan";
+  name = "project";
   options = {
     src = {
       type = {

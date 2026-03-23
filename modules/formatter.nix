@@ -6,8 +6,8 @@ in
 {
   name = "formatter";
   inputs = {
-    scan = {
-      path = "../scan";
+    project = {
+      path = "../project";
     };
     scope = {
       path = "../scope";
@@ -17,7 +17,7 @@ in
     { results, ... }:
     let
       s = results.scope;
-      src = results.scan.resolvedSrc;
+      src = results.project.resolvedSrc;
       formatterPath =
         let
           p = src + "/formatter.nix";

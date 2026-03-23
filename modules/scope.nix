@@ -8,8 +8,8 @@
     nixpkgs = {
       path = "/nixpkgs";
     };
-    scan = {
-      path = "../scan";
+    project = {
+      path = "../project";
     };
   };
   impl =
@@ -18,8 +18,8 @@
       inherit (builtins) isAttrs mapAttrs;
       system = inputs.nixpkgs.system;
       pkgs = inputs.nixpkgs.pkgs;
-      flakeInputs = results.scan.inputs;
-      self = results.scan.self;
+      flakeInputs = results.project.inputs;
+      self = results.project.self;
     in
     {
       inherit system pkgs self;

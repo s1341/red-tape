@@ -6,14 +6,14 @@ in
 {
   name = "templates";
   inputs = {
-    scan = {
-      path = "../scan";
+    project = {
+      path = "../project";
     };
   };
   impl =
     { results, ... }:
     let
-      src = results.scan.resolvedSrc;
+      src = results.project.resolvedSrc;
       found = scanSubdirs (src + "/templates") (path: {
         inherit path;
       });

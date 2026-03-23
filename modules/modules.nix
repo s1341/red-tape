@@ -71,8 +71,8 @@ in
 {
   name = "modules";
   inputs = {
-    scan = {
-      path = "../scan";
+    project = {
+      path = "../project";
     };
     contrib = {
       path = "../contrib";
@@ -82,8 +82,8 @@ in
   impl =
     { results, ... }:
     let
-      src = results.scan.resolvedSrc;
-      inherit (results.scan) self inputs;
+      src = results.project.resolvedSrc;
+      inherit (results.project) self inputs;
       discovered = scanSubdirs (src + "/modules") scanDir;
     in
     if discovered != { } then

@@ -33,23 +33,23 @@ Building:
 
 [adios-flake](https://github.com/Mic92/adios-flake) modules that handle both discovery and building for their output type. adios-flake is a flake-output wrapper around [adios](https://github.com/adisbladis/adios), a lightweight module system with explicit dependency declaration and topological ordering.
 
-Each module imports the primitives it needs from `lib/internal.nix` and scans the filesystem itself. The `scan` module is a thin context provider (`resolvedSrc`, `self`, `inputs`).
+Each module imports the primitives it needs from `lib/internal.nix` and scans the filesystem itself. The `project` module is a thin context provider (`resolvedSrc`, `self`, `inputs`).
 
 ```
-scan ──→ scope ──→ packages  (scans packages/, package.nix)
-              ├──→ devshells (scans devshells/, devshell.nix)
-              ├──→ formatter (scans formatter.nix)
-              └──→ checks    (scans checks/; also depends on packages, devshells, formatter, hosts)
+project ──→ scope ──→ packages  (scans packages/, package.nix)
+                 ├──→ devshells (scans devshells/, devshell.nix)
+                 ├──→ formatter (scans formatter.nix)
+                 └──→ checks    (scans checks/; also depends on packages, devshells, formatter, hosts)
 
-scan ──→ hosts      (scans hosts/ via scanHosts; depends on contrib)
-    ├──→ modules    (scans modules/{type}/; depends on contrib)
-    ├──→ templates  (scans templates/)
-    └──→ lib        (scans lib/default.nix)
+project ──→ hosts      (scans hosts/ via scanHosts; depends on contrib)
+       ├──→ modules    (scans modules/{type}/; depends on contrib)
+       ├──→ templates  (scans templates/)
+       └──→ lib        (scans lib/default.nix)
 ```
 
 **Per-system modules** (packages, devshells, formatter, checks) depend on `scope` which provides `{ system, pkgs, lib, flake, inputs, perSystem }`.
 
-**System-agnostic modules** (hosts, modules, templates, lib) depend only on `scan` (plus `contrib` where extensible).
+**System-agnostic modules** (hosts, modules, templates, lib) depend only on `project` (plus `contrib` where extensible).
 
 ## Design Decisions
 

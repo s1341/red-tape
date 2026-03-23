@@ -5,15 +5,15 @@ in
 {
   name = "lib";
   inputs = {
-    scan = {
-      path = "../scan";
+    project = {
+      path = "../project";
     };
   };
   impl =
     { results, ... }:
     let
-      src = results.scan.resolvedSrc;
-      inherit (results.scan) self inputs;
+      src = results.project.resolvedSrc;
+      inherit (results.project) self inputs;
       libPath =
         let
           p = src + "/lib/default.nix";

@@ -43,7 +43,7 @@ let
         builtins.attrValues results
       );
     modules = {
-      scan = import ./scan.nix;
+      project = import ./project.nix;
       scope = import ./scope.nix;
       packages = import ./packages.nix;
       devshells = import ./devshells.nix;

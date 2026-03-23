@@ -5,8 +5,8 @@ in
 {
   name = "devshells";
   inputs = {
-    scan = {
-      path = "../scan";
+    project = {
+      path = "../project";
     };
     scope = {
       path = "../scope";
@@ -15,7 +15,7 @@ in
   impl =
     { results, ... }:
     let
-      src = results.scan.resolvedSrc;
+      src = results.project.resolvedSrc;
       found = scanEntries {
         dir = src + "/devshells";
         single = src + "/devshell.nix";

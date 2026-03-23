@@ -1,6 +1,11 @@
 # red-tape/checks — Discover checks + auto-checks from packages/devshells/hosts
 let
-  inherit (import ../lib/internal.nix) buildAll filterPlatforms withPrefix scanEntries;
+  inherit (import ../lib/internal.nix)
+    buildAll
+    filterPlatforms
+    withPrefix
+    scanEntries
+    ;
   inherit (builtins)
     attrNames
     concatMap
@@ -11,8 +16,8 @@ in
 {
   name = "checks";
   inputs = {
-    scan = {
-      path = "../scan";
+    project = {
+      path = "../project";
     };
     scope = {
       path = "../scope";
@@ -35,7 +40,7 @@ in
     let
       s = results.scope;
       system = s.system;
-      src = results.scan.resolvedSrc;
+      src = results.project.resolvedSrc;
       packages = results.packages.packages;
       devShells = results.devshells.devShells;
       formatter = results.formatter.formatter;

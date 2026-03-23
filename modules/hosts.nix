@@ -135,8 +135,8 @@ in
 {
   name = "hosts";
   inputs = {
-    scan = {
-      path = "../scan";
+    project = {
+      path = "../project";
     };
     contrib = {
       path = "../contrib";
@@ -145,8 +145,8 @@ in
   impl =
     { results, ... }:
     let
-      src = results.scan.resolvedSrc;
-      inherit (results.scan) self inputs;
+      src = results.project.resolvedSrc;
+      inherit (results.project) self inputs;
       hostTypes = coreHostTypes ++ results.contrib.scanHostTypes;
       discovered = scanHosts (src + "/hosts") hostTypes;
     in

@@ -31,7 +31,7 @@ let
       };
       tree = adiosLib rootDef {
         options = {
-          "/red-tape/scan" = {
+          "/red-tape/project" = {
             inherit src;
           }
           // (if prefix != null then { inherit prefix; } else { });

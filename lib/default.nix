@@ -6,7 +6,7 @@ let
 
   # Build the red-tape root module with contrib submodules dynamically wired.
   # Each contrib module becomes a child of the contrib collector, which
-  # aggregates their results for scan/hosts/modules to consume via inputs.
+  # aggregates their results for project/hosts/modules to consume via inputs.
   mkRootModule =
     contribs:
     let
@@ -64,7 +64,7 @@ let
         ;
       modules = [ (mkRootModule modules) ];
       config = {
-        "red-tape/scan" = {
+        "red-tape/project" = {
           inherit src self;
           inputs = inputs;
         }
