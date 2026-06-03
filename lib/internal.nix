@@ -24,50 +24,62 @@ let
   # .nix files take precedence over directories with the same stem.
   scanDir =
     path:
-    if !pathExists path then
-      { }
-    else
-      let
-        entries = readDir path;
-        dirs = listToAttrs (
-          filter (x: x != null) (
-            map (
-              name:
-              if entries.${name} == "directory" && pathExists (path + "/${name}/default.nix") then
-                {
-                  inherit name;
-                  value = {
-                    path = path + "/${name}";
-                    type = "directory";
-                  };
-                }
-              else
-                null
-            ) (attrNames entries)
-          )
-        );
-        files = listToAttrs (
-          filter (x: x != null) (
-            map (
+    let
+      scan =
+        currentPath:
+        if !pathExists currentPath then
+          { }
+        else
+          let
+            entries = readDir currentPath;
+
+            processEntry =
               name:
               let
-                m = match "(.+)\\.nix$" name;
+                type = entries.${name};
+                subPath = currentPath + "/${name}";
               in
-              if entries.${name} == "regular" && m != null && name != "default.nix" then
-                {
-                  name = head m;
-                  value = {
-                    path = path + "/${name}";
-                    type = "file";
-                  };
-                }
+              if type == "directory" then
+                let
+                  # 1. Check if this directory is a module/host itself (contains default.nix)
+                  currentDirAttr =
+                    if pathExists (subPath + "/default.nix") then
+                      {
+                        "${name}" = {
+                          path = subPath;
+                          type = "directory";
+                        };
+                      }
+                    else
+                      { };
+
+                  # 2. Recursively scan deeper inside this directory
+                  innerResults = scan subPath;
+                in
+                currentDirAttr // innerResults
+
+              else if type == "regular" then
+                let
+                  m = builtins.match "(.+)\\.nix$" name;
+                in
+                # 3. Match regular .nix files (excluding default.nix)
+                if m != null && name != "default.nix" then
+                  {
+                    "${head m}" = {
+                      path = subPath;
+                      type = "file";
+                    };
+                  }
+                else
+                  { }
               else
-                null
-            ) (attrNames entries)
-          )
-        );
-      in
-      dirs // files;
+                { };
+
+            listOfAttrs = map processEntry (builtins.attrNames entries);
+          in
+          builtins.foldl' (a: b: a // b) { } listOfAttrs;
+    in
+    scan path;
 
   # Like scanDir but for hosts: walks subdirs looking for sentinel files
   # (e.g. configuration.nix) to determine host type.
