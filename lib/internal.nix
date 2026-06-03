@@ -110,10 +110,10 @@ let
             currentHost // innerHosts;
 
         # Map over all entries and get a list of attribute sets
-        listOfAttrs = mapAttrsToList processEntry entries;
+        listOfAttrs = builtins.mapAttrsToList processEntry entries;
       in
       # Merge all the collected attribute sets together into one flat result
-      foldl' (a: b: a // b) { } listOfAttrs;
+      builtins.foldl' (a: b: a // b) { } listOfAttrs;
 
   # Scan subdirectories of a path, applying f to each.
   # Returns { name = f (path + "/${name}"); ... } or {} if path is missing.
