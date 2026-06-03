@@ -11,7 +11,6 @@ let
     intersectAttrs
     listToAttrs
     map
-    mapAttrsToList
     mapAttrs
     match
     pathExists
@@ -75,47 +74,48 @@ let
   # Returns { name = { type; configPath; hostPath; }; ... }.
   scanHosts =
     path: hostTypes:
-    if !pathExists path then
-      { }
-    else
-      let
-        entries = readDir path;
-
-        # Process a single entry in the directory
-        processEntry =
-          name: type:
+    let
+      scan =
+        currentPath:
+        if !pathExists currentPath then
+          { }
+        else
           let
-            subPath = path + "/${name}";
+            entries = readDir currentPath;
+
+            processEntry =
+              name:
+              let
+                type = entries.${name};
+                subPath = currentPath + "/${name}";
+              in
+              if type != "directory" then
+                { }
+              else
+                let
+                  hits = filter (t: pathExists (subPath + "/${t.file}")) hostTypes;
+
+                  currentHost =
+                    if hits == [ ] then
+                      { }
+                    else
+                      {
+                        "${name}" = {
+                          type = (head hits).type;
+                          configPath = subPath + "/${(head hits).file}";
+                          hostPath = subPath;
+                        };
+                      };
+
+                  innerHosts = scan subPath;
+                in
+                currentHost // innerHosts;
+
+            listOfAttrs = map processEntry (builtins.attrNames entries);
           in
-          if type != "directory" then
-            { } # Skip files
-          else
-            let
-              # 1. Check if this specific directory is a host
-              hits = filter (t: pathExists (subPath + "/${t.file}")) hostTypes;
-              currentHost =
-                if hits == [ ] then
-                  { }
-                else
-                  {
-                    "${name}" = {
-                      type = (head hits).type;
-                      configPath = subPath + "/${(head hits).file}";
-                      hostPath = subPath;
-                    };
-                  };
-
-              # 2. Recursively scan inside this directory for deeper hosts
-              innerHosts = scanHosts subPath hostTypes;
-            in
-            # Merge the host found at this level (if any) with deeper hosts
-            currentHost // innerHosts;
-
-        # Map over all entries and get a list of attribute sets
-        listOfAttrs = mapAttrsToList processEntry entries;
-      in
-      # Merge all the collected attribute sets together into one flat result
-      foldl' (a: b: a // b) { } listOfAttrs;
+          builtins.foldl' (a: b: a // b) { } listOfAttrs;
+    in
+    scan path;
 
   # Scan subdirectories of a path, applying f to each.
   # Returns { name = f (path + "/${name}"); ... } or {} if path is missing.
