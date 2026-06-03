@@ -78,32 +78,42 @@ let
     else
       let
         entries = readDir path;
-      in
-      listToAttrs (
-        filter (x: x != null) (
-          map (
-            name:
-            if entries.${name} != "directory" then
-              null
-            else
-              let
-                hostPath = path + "/${name}";
-                hits = filter (t: pathExists (hostPath + "/${t.file}")) hostTypes;
-              in
-              if hits == [ ] then
-                null
-              else
-                {
-                  inherit name;
-                  value = {
-                    type = (head hits).type;
-                    configPath = hostPath + "/${(head hits).file}";
-                    inherit hostPath;
+
+        # Process a single entry in the directory
+        processEntry =
+          name: type:
+          let
+            subPath = path + "/${name}";
+          in
+          if type != "directory" then
+            { } # Skip files
+          else
+            let
+              # 1. Check if this specific directory is a host
+              hits = filter (t: pathExists (subPath + "/${t.file}")) hostTypes;
+              currentHost =
+                if hits == [ ] then
+                  { }
+                else
+                  {
+                    "${name}" = {
+                      type = (head hits).type;
+                      configPath = subPath + "/${(head hits).file}";
+                      hostPath = subPath;
+                    };
                   };
-                }
-          ) (attrNames entries)
-        )
-      );
+
+              # 2. Recursively scan inside this directory for deeper hosts
+              innerHosts = scanHosts subPath hostTypes;
+            in
+            # Merge the host found at this level (if any) with deeper hosts
+            currentHost // innerHosts;
+
+        # Map over all entries and get a list of attribute sets
+        listOfAttrs = mapAttrsToList processEntry entries;
+      in
+      # Merge all the collected attribute sets together into one flat result
+      foldl' (a: b: a // b) { } listOfAttrs;
 
   # Scan subdirectories of a path, applying f to each.
   # Returns { name = f (path + "/${name}"); ... } or {} if path is missing.
