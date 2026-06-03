@@ -5,11 +5,13 @@ let
     attrNames
     elem
     filter
+    foldl'
     functionArgs
     head
     intersectAttrs
     listToAttrs
     map
+    mapAttrsToList
     mapAttrs
     match
     pathExists
@@ -110,10 +112,10 @@ let
             currentHost // innerHosts;
 
         # Map over all entries and get a list of attribute sets
-        listOfAttrs = builtins.mapAttrsToList processEntry entries;
+        listOfAttrs = mapAttrsToList processEntry entries;
       in
       # Merge all the collected attribute sets together into one flat result
-      builtins.foldl' (a: b: a // b) { } listOfAttrs;
+      foldl' (a: b: a // b) { } listOfAttrs;
 
   # Scan subdirectories of a path, applying f to each.
   # Returns { name = f (path + "/${name}"); ... } or {} if path is missing.
