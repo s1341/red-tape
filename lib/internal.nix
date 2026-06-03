@@ -121,18 +121,41 @@ let
   # Returns { name = f (path + "/${name}"); ... } or {} if path is missing.
   scanSubdirs =
     path: f:
-    if !pathExists path then
-      { }
-    else
-      let
-        entries = readDir path;
-      in
-      listToAttrs (
-        map (name: {
-          inherit name;
-          value = f (path + "/${name}");
-        }) (filter (name: entries.${name} == "directory") (attrNames entries))
-      );
+    let
+      scan =
+        currentPath:
+        if !pathExists currentPath then
+          { }
+        else
+          let
+            entries = readDir currentPath;
+
+            processEntry =
+              name:
+              let
+                type = entries.${name};
+                subPath = currentPath + "/${name}";
+              in
+              if type != "directory" then
+                { }
+              else
+                let
+                  # Apply the function 'f' to the current directory
+                  currentDirAttr = {
+                    "${name}" = f subPath;
+                  };
+
+                  # Recursively scan inside this directory
+                  innerDirs = scan subPath;
+                in
+                # Merge the current directory result with any nested results
+                currentDirAttr // innerDirs;
+
+            listOfAttrs = map processEntry (builtins.attrNames entries);
+          in
+          builtins.foldl' (a: b: a // b) { } listOfAttrs;
+    in
+    scan path;
 
   # Scan a directory for entries, with optional single-file fallback.
   #   scanEntries { dir = src + "/packages"; single = src + "/package.nix"; }
