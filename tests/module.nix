@@ -6,17 +6,47 @@ let
 
   adiosLib = adios-flake.inputs.adios.adios;
   redTape = import ../lib { inherit adios-flake; };
+  mkRootModule =
+    contribs:
+    let
+      base = redTape.modules.redTape.default;
+      contribMod = base.modules.contrib;
+      numberedContribs = builtins.genList (i: {
+        name = "_c${toString i}";
+        value = builtins.removeAttrs (builtins.elemAt contribs i) [ "name" ];
+      }) (builtins.length contribs);
+      contribChildren = builtins.listToAttrs numberedContribs;
+      contribInputs = builtins.listToAttrs (
+        map (c: {
+          inherit (c) name;
+          value = {
+            path = "./${c.name}";
+          };
+        }) numberedContribs
+      );
+    in
+    base
+    // {
+      modules = base.modules // {
+        contrib = contribMod // {
+          inputs = contribMod.inputs or { } // contribInputs;
+          modules = (contribMod.modules or { }) // contribChildren;
+        };
+      };
+    };
 
   evalFixture =
     {
       src,
       prefix ? null,
       modulesOpts ? { },
+      rootModule ? redTape.modules.redTape.default,
+      projectInputs ? { },
     }:
     let
       rootDef = {
         modules = {
-          "red-tape" = builtins.removeAttrs redTape.modules.redTape.default [ "name" ];
+          "red-tape" = builtins.removeAttrs rootModule [ "name" ];
           nixpkgs = {
             options = {
               system = {
@@ -33,6 +63,7 @@ let
         options = {
           "/red-tape/project" = {
             inherit src;
+            inputs = projectInputs;
           }
           // (if prefix != null then { inherit prefix; } else { });
           "/red-tape/modules" = modulesOpts;
@@ -60,6 +91,20 @@ let
     prefix = "nix";
   };
   minimalResult = evalFixture { src = fixtures + "/minimal"; };
+  homeManagerResult = evalFixture {
+    src = fixtures + "/home-manager";
+    rootModule = mkRootModule [ redTape.modules.redTape.home-manager ];
+    projectInputs = {
+      home-manager.lib.homeManagerConfiguration = args: {
+        _type = "home-manager-configuration";
+        inherit (args)
+          pkgs
+          modules
+          extraSpecialArgs
+          ;
+      };
+    };
+  };
 in
 {
   testModulePackageNames = {
@@ -108,6 +153,20 @@ in
       "default"
       "minimal"
     ];
+  };
+  testHomeManagerContribOutput = {
+    expr = {
+      names = builtins.attrNames homeManagerResult.homeConfigurations;
+      type = homeManagerResult.homeConfigurations.alice._type;
+      pkgsSystem = homeManagerResult.homeConfigurations.alice.pkgs.system;
+      hostName = homeManagerResult.homeConfigurations.alice.extraSpecialArgs.hostName;
+    };
+    expected = {
+      names = [ "alice" ];
+      type = "home-manager-configuration";
+      pkgsSystem = "x86_64-linux";
+      hostName = "alice";
+    };
   };
   testLibPresent = {
     expr = fullResult ? lib;

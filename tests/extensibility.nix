@@ -5,9 +5,10 @@ let
     helpers
     builders
     fixtures
+    mockPkgs
     ;
   inherit (helpers) entryPath;
-  inherit (builders) buildModules;
+  inherit (builders) buildHosts buildModules;
   inherit (prelude) coreHostTypes;
   inherit (discover) scanDir scanHosts scanSubdirs;
 in
@@ -56,6 +57,43 @@ in
     expected = {
       customType = "custom";
       myhostType = "nixos";
+    };
+  };
+  testHomeManagerContribBuildsHomeConfigurations = {
+    expr =
+      let
+        homeManagerContrib = (import ../contrib/home-manager.nix).impl {
+          results.scope.pkgs = mockPkgs;
+        };
+        found = scanHosts (fixtures + "/home-manager/hosts") homeManagerContrib.scanHostTypes;
+        result = buildHosts {
+          discovered = found;
+          inputs = {
+            home-manager.lib.homeManagerConfiguration = args: {
+              _type = "home-manager-configuration";
+              inherit (args)
+                pkgs
+                modules
+                extraSpecialArgs
+                ;
+            };
+          };
+          extraHostTypes = homeManagerContrib.hostTypes;
+        };
+      in
+      {
+        names = builtins.attrNames result.homeConfigurations;
+        type = result.homeConfigurations.alice._type;
+        pkgsSystem = result.homeConfigurations.alice.pkgs.system;
+        moduleIsPath = builtins.isPath (builtins.head result.homeConfigurations.alice.modules);
+        hostName = result.homeConfigurations.alice.extraSpecialArgs.hostName;
+      };
+    expected = {
+      names = [ "alice" ];
+      type = "home-manager-configuration";
+      pkgsSystem = "x86_64-linux";
+      moduleIsPath = true;
+      hostName = "alice";
     };
   };
   testScanModuleSubdirs = {
