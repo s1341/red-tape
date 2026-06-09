@@ -56,7 +56,13 @@ let
         else
           path;
 
-      built = mapAttrs (_: mapAttrs (_: importModule)) discovered;
+      importTree =
+        tree:
+        mapAttrs (
+          _: value: if value ? path && value ? type then importModule value else importTree value
+        ) tree;
+
+      built = mapAttrs (_: importTree) discovered;
 
       aliased = foldl' (
         acc: t:

@@ -8,7 +8,9 @@ let
     foldl'
     functionArgs
     head
+    hasAttr
     intersectAttrs
+    isAttrs
     listToAttrs
     map
     mapAttrs
@@ -16,6 +18,8 @@ let
     pathExists
     readDir
     ;
+
+  isEntry = x: isAttrs x && x ? path && x ? type;
 
   # ── Scanning primitives ────────────────────────────────────────────
 
@@ -25,6 +29,32 @@ let
   scanDir =
     path:
     let
+      recursiveMerge =
+        a: b:
+        listToAttrs (
+          map (
+            name:
+            let
+              inA = hasAttr name a;
+              inB = hasAttr name b;
+            in
+            {
+              inherit name;
+              value =
+                if
+                  inA && inB && isAttrs a.${name} && isAttrs b.${name} && !isEntry a.${name} && !isEntry b.${name}
+                then
+                  recursiveMerge a.${name} b.${name}
+                else if inB then
+                  b.${name}
+                else
+                  a.${name};
+            }
+          ) (attrNames (a // b))
+        );
+
+      mergeAll = foldl' recursiveMerge { };
+
       scan =
         currentPath:
         if !pathExists currentPath then
@@ -40,23 +70,18 @@ let
                 subPath = currentPath + "/${name}";
               in
               if type == "directory" then
-                let
-                  # 1. Check if this directory is a module/host itself (contains default.nix)
-                  currentDirAttr =
-                    if pathExists (subPath + "/default.nix") then
-                      {
-                        "${name}" = {
-                          path = subPath;
-                          type = "directory";
-                        };
-                      }
-                    else
-                      { };
-
-                  # 2. Recursively scan deeper inside this directory
-                  innerResults = scan subPath;
-                in
-                currentDirAttr // innerResults
+                if pathExists (subPath + "/default.nix") then
+                  {
+                    "${name}" = {
+                      path = subPath;
+                      type = "directory";
+                    };
+                  }
+                else
+                  let
+                    innerResults = scan subPath;
+                  in
+                  if innerResults == { } then { } else { "${name}" = innerResults; }
 
               else if type == "regular" then
                 let
@@ -77,7 +102,7 @@ let
 
             listOfAttrs = map processEntry (builtins.attrNames entries);
           in
-          builtins.foldl' (a: b: a // b) { } listOfAttrs;
+          mergeAll listOfAttrs;
     in
     scan path;
 
@@ -121,7 +146,12 @@ let
 
                   innerHosts = scan subPath;
                 in
-                currentHost // innerHosts;
+                if currentHost != { } then
+                  currentHost
+                else if innerHosts == { } then
+                  { }
+                else
+                  { "${name}" = innerHosts; };
 
             listOfAttrs = map processEntry (builtins.attrNames entries);
           in
@@ -133,6 +163,24 @@ let
   # Returns { name = f (path + "/${name}"); ... } or {} if path is missing.
   scanSubdirs =
     path: f:
+    if !pathExists path then
+      { }
+    else
+      let
+        entries = readDir path;
+        dirs = filter (name: entries.${name} == "directory") (attrNames entries);
+      in
+      listToAttrs (
+        map (name: {
+          inherit name;
+          value = f (path + "/${name}");
+        }) dirs
+      );
+
+  # Recursively scan directories that contain a sentinel file.
+  # Used for templates, where flake.nix marks a leaf.
+  scanDirsWithFile =
+    path: file: f:
     let
       scan =
         currentPath:
@@ -141,31 +189,22 @@ let
         else
           let
             entries = readDir currentPath;
+            dirs = filter (name: entries.${name} == "directory") (attrNames entries);
 
-            processEntry =
+            processDir =
               name:
               let
-                type = entries.${name};
                 subPath = currentPath + "/${name}";
+                children = scan subPath;
               in
-              if type != "directory" then
+              if pathExists (subPath + "/${file}") then
+                { "${name}" = f subPath; }
+              else if children == { } then
                 { }
               else
-                let
-                  # Apply the function 'f' to the current directory
-                  currentDirAttr = {
-                    "${name}" = f subPath;
-                  };
-
-                  # Recursively scan inside this directory
-                  innerDirs = scan subPath;
-                in
-                # Merge the current directory result with any nested results
-                currentDirAttr // innerDirs;
-
-            listOfAttrs = map processEntry (builtins.attrNames entries);
+                { "${name}" = children; };
           in
-          builtins.foldl' (a: b: a // b) { } listOfAttrs;
+          foldl' (a: b: a // b) { } (map processDir dirs);
     in
     scan path;
 
@@ -217,7 +256,10 @@ let
       fn (intersectAttrs (functionArgs fn) (scope // extra))
     );
 
-  buildAll = scope: mapAttrs (pname: e: callFile scope (entryPath e) { inherit pname; });
+  mapEntryTree =
+    f: tree: mapAttrs (name: value: if isEntry value then f name value else mapEntryTree f value) tree;
+
+  buildAll = scope: mapEntryTree (pname: e: callFile scope (entryPath e) { inherit pname; });
 
   filterPlatforms =
     system: a:
@@ -226,12 +268,24 @@ let
         map (
           n:
           let
-            p = a.${n}.meta.platforms or [ ];
+            value = a.${n};
+            p = value.meta.platforms or [ ];
           in
-          if p == [ ] || elem system p then
+          if isAttrs value && !(value ? type) && !(value ? outPath) then
+            let
+              filtered = filterPlatforms system value;
+            in
+            if filtered == { } then
+              null
+            else
+              {
+                name = n;
+                value = filtered;
+              }
+          else if p == [ ] || elem system p then
             {
               name = n;
-              value = a.${n};
+              inherit value;
             }
           else
             null
@@ -253,6 +307,7 @@ in
     scanDir
     scanHosts
     scanSubdirs
+    scanDirsWithFile
     scanEntries
     entryPath
     callFile
