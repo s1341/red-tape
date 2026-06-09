@@ -11,6 +11,7 @@ in
     expected = [
       "goodbye"
       "hello"
+      "tools"
     ];
   };
 
@@ -26,7 +27,10 @@ in
 
   testDevshells = {
     expr = builtins.attrNames (scanDir (full + "/devshells"));
-    expected = [ "backend" ];
+    expected = [
+      "backend"
+      "tools"
+    ];
   };
 
   testNonExistent = {
@@ -41,6 +45,28 @@ in
 
   testChecks = {
     expr = builtins.attrNames (scanDir (full + "/checks"));
-    expected = [ "mycheck" ];
+    expected = [
+      "mycheck"
+      "quality"
+    ];
+  };
+
+  testNestedPaths = {
+    expr =
+      let
+        packages = scanDir (full + "/packages");
+        devshells = scanDir (full + "/devshells");
+        checks = scanDir (full + "/checks");
+      in
+      {
+        package = packages.tools.extra.type;
+        devshell = devshells.tools.backend.type;
+        check = checks.quality.lint.type;
+      };
+    expected = {
+      package = "file";
+      devshell = "file";
+      check = "file";
+    };
   };
 }

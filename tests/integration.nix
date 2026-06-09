@@ -63,11 +63,17 @@ in
     expected = [
       "goodbye"
       "hello"
+      "tools"
     ];
   };
 
   testPackageType = {
     expr = full.packages.hello.type;
+    expected = "derivation";
+  };
+
+  testNestedPackageType = {
+    expr = full.packages.tools.extra.type;
     expected = "derivation";
   };
 
@@ -110,11 +116,17 @@ in
     expected = [
       "backend"
       "default"
+      "tools"
     ];
   };
 
   testDevshellType = {
     expr = full.devShells.default.type;
+    expected = "devshell";
+  };
+
+  testNestedDevshellType = {
+    expr = full.devShells.tools.backend.type;
     expected = "devshell";
   };
 
@@ -134,7 +146,15 @@ in
 
   testFullCheckNames = {
     expr = sort (names full.checks);
-    expected = [ "mycheck" ];
+    expected = [
+      "mycheck"
+      "quality"
+    ];
+  };
+
+  testNestedCheckType = {
+    expr = full.checks.quality.lint.type;
+    expected = "derivation";
   };
 
   # --- Auto-checks ---
@@ -144,7 +164,13 @@ in
     expected = [
       "pkgs-goodbye"
       "pkgs-hello"
+      "pkgs-tools"
     ];
+  };
+
+  testAutoCheckNestedPackage = {
+    expr = (withPrefix "pkgs-" full.packages).pkgs-tools.extra.type;
+    expected = "derivation";
   };
 
   testAutoCheckDevshellPrefix = {
@@ -152,6 +178,12 @@ in
     expected = [
       "devshell-backend"
       "devshell-default"
+      "devshell-tools"
     ];
+  };
+
+  testAutoCheckNestedDevshell = {
+    expr = (withPrefix "devshell-" full.devShells).devshell-tools.backend.type;
+    expected = "devshell";
   };
 }

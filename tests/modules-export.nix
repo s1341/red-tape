@@ -37,9 +37,15 @@ in
   testNixosModuleNames = {
     expr = builtins.sort builtins.lessThan (builtins.attrNames full.nixosModules);
     expected = [
+      "core"
       "injected"
       "server"
     ];
+  };
+
+  testNestedNixosModule = {
+    expr = builtins.isPath full.nixosModules.core.extra.foo;
+    expected = true;
   };
 
   testPlainModuleIsPath = {

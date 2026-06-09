@@ -107,6 +107,23 @@ By default, red-tape supports two host types:
 
 Custom hosts (`default.nix`) receive `{ flake, inputs, hostName }` and can return anything.
 
+Hosts are discovered recursively. By default, the leaf directory is used as the
+top-level host name, so `hosts/group/app/configuration.nix` becomes
+`nixosConfigurations.app`. Duplicate leaf host names are rejected.
+
+If duplicate leaf names are useful, enable hyphenated host names:
+
+```nix
+red-tape.mkFlake {
+  inherit inputs;
+  src = ./.;
+  config."red-tape/hosts".hostNameMode = "hyphenated";
+}
+```
+
+Then `hosts/group/app/configuration.nix` becomes
+`nixosConfigurations.group-app`.
+
 ### Adding Host Types via Contrib
 
 ```nix

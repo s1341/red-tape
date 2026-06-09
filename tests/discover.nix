@@ -39,7 +39,7 @@ let
   scanModules = src: scanSubdirs (src + "/modules") scanDir;
   scanTemplates =
     src:
-    scanSubdirs (src + "/templates") (path: {
+    discover.scanDirsWithFile (src + "/templates") "flake.nix" (path: {
       inherit path;
     });
 
@@ -61,16 +61,21 @@ in
   testFullPackages.expected = [
     "goodbye"
     "hello"
+    "tools"
   ];
 
   testFullDevshells.expr = sort (attrNames (scanDevshells full));
   testFullDevshells.expected = [
     "backend"
     "default"
+    "tools"
   ];
 
   testFullChecks.expr = attrNames (scanChecks full);
-  testFullChecks.expected = [ "mycheck" ];
+  testFullChecks.expected = [
+    "mycheck"
+    "quality"
+  ];
 
   testFullFormatter.expr = (scanFormatter full) != null;
   testFullFormatter.expected = true;
@@ -79,6 +84,7 @@ in
   testFullHosts.expected = [
     "custom"
     "db"
+    "group"
     "monitoring"
     "myhost"
     "mymac"
@@ -110,6 +116,7 @@ in
 
   testFullNixosModules.expr = sort (attrNames (scanModules full).nixos);
   testFullNixosModules.expected = [
+    "core"
     "injected"
     "server"
   ];
@@ -120,8 +127,37 @@ in
   testFullTemplates.expr = sort (attrNames (scanTemplates full));
   testFullTemplates.expected = [
     "default"
+    "group"
     "minimal"
   ];
+
+  testNestedDiscovery = {
+    expr =
+      let
+        packages = scanPackages full;
+        devshells = scanDevshells full;
+        checks = scanChecks full;
+        hosts = scanHosts (full + "/hosts") coreHostTypes;
+        modules = scanModules full;
+        templates = scanTemplates full;
+      in
+      {
+        package = packages.tools.extra.type;
+        devshell = devshells.tools.backend.type;
+        check = checks.quality.lint.type;
+        host = hosts.group.app.type;
+        module = modules.nixos.core.extra.foo.type;
+        template = templates.group.app.path == full + "/templates/group/app";
+      };
+    expected = {
+      package = "file";
+      devshell = "file";
+      check = "file";
+      host = "nixos";
+      module = "file";
+      template = true;
+    };
+  };
 
   testFullLib.expr = (scanLib full) != null;
   testFullLib.expected = true;

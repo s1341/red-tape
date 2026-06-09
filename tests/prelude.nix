@@ -50,6 +50,8 @@ let
     addErrorContext
     all
     attrNames
+    concatStringsSep
+    concatLists
     elem
     filter
     foldl'
@@ -57,6 +59,7 @@ let
     intersectAttrs
     isAttrs
     isFunction
+    length
     listToAttrs
     map
     mapAttrs
@@ -115,6 +118,7 @@ let
       inputs ? { },
       self ? null,
       extraHostTypes ? { },
+      hostNameMode ? "leaf",
     }:
     let
       specialArgs = {
@@ -144,20 +148,89 @@ let
               };
             }
         );
-      loaded = mapAttrs loadHost discovered;
-      byOutputKey = foldl' (
-        acc: n:
-        let
-          h = loaded.${n};
-          key = h.outputKey;
-        in
-        acc
-        // {
-          ${key} = (acc.${key} or { }) // {
-            ${n} = h.value;
-          };
-        }
-      ) { } (attrNames loaded);
+
+      isHostInfo = x: x ? type && x ? configPath && x ? hostPath;
+
+      flattenHosts =
+        prefix: tree:
+        concatLists (
+          map (
+            n:
+            let
+              value = tree.${n};
+              path = prefix ++ [ n ];
+              name = if hostNameMode == "hyphenated" then concatStringsSep "-" path else n;
+            in
+            if isHostInfo value then
+              [
+                {
+                  inherit name;
+                  info = value;
+                }
+              ]
+            else
+              flattenHosts path value
+          ) (attrNames tree)
+        );
+
+      hostEntries = flattenHosts [ ] discovered;
+      hostNames = map (h: h.name) hostEntries;
+      duplicateNames = filter (n: length (filter (m: m == n) hostNames) > 1) hostNames;
+      duplicateHostNames = attrNames (
+        listToAttrs (
+          map (name: {
+            inherit name;
+            value = null;
+          }) duplicateNames
+        )
+      );
+
+      checkedHostEntries =
+        if duplicateHostNames == [ ] then
+          hostEntries
+        else if hostNameMode == "leaf" then
+          throw "red-tape: duplicate host names are not allowed in leaf mode: ${concatStringsSep ", " duplicateHostNames}"
+        else
+          throw "red-tape: duplicate hyphenated host names: ${concatStringsSep ", " duplicateHostNames}";
+
+      loaded = listToAttrs (
+        map (h: {
+          inherit (h) name;
+          value = loadHost h.name h.info;
+        }) checkedHostEntries
+      );
+
+      outputKeys = attrNames (
+        listToAttrs (
+          map (n: {
+            name = loaded.${n}.outputKey;
+            value = null;
+          }) (attrNames loaded)
+        )
+      );
+
+      projectOutput =
+        key:
+        listToAttrs (
+          filter (x: x != null) (
+            map (
+              n:
+              let
+                h = loaded.${n};
+              in
+              if h.outputKey == key then
+                {
+                  name = n;
+                  value = h.value;
+                }
+              else
+                null
+            ) (attrNames loaded)
+          )
+        );
+
+      byOutputKey = foldl' (acc: key: acc // { ${key} = projectOutput key; }) { } outputKeys;
+
       autoChecks =
         system:
         listToAttrs (filter (x: x != null) (
@@ -220,7 +293,13 @@ let
           }
         else
           path;
-      built = mapAttrs (_: mapAttrs (_: importModule)) discovered;
+      importTree =
+        tree:
+        mapAttrs (
+          _: value: if value ? path && value ? type then importModule value else importTree value
+        ) tree;
+
+      built = mapAttrs (_: importTree) discovered;
 
       aliased = foldl' (
         acc: t:
