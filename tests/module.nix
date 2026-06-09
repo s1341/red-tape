@@ -12,6 +12,7 @@ let
       src,
       prefix ? null,
       modulesOpts ? { },
+      hostsOpts ? { },
     }:
     let
       rootDef = {
@@ -46,7 +47,7 @@ let
           "/red-tape/devshells" = { };
           "/red-tape/checks" = { };
           "/red-tape/formatter" = { };
-          "/red-tape/hosts" = { };
+          "/red-tape/hosts" = hostsOpts;
           "/red-tape/templates" = { };
           "/red-tape/lib" = { };
         };
@@ -60,6 +61,12 @@ let
     prefix = "nix";
   };
   minimalResult = evalFixture { src = fixtures + "/minimal"; };
+  hyphenatedHostsResult = evalFixture {
+    src = fixtures + "/full";
+    hostsOpts = {
+      hostNameMode = "hyphenated";
+    };
+  };
 in
 {
   testModulePackageNames = {
@@ -67,13 +74,19 @@ in
     expected = [
       "goodbye"
       "hello"
+      "tools"
     ];
+  };
+  testModuleNestedPackage = {
+    expr = fullResult.packages.tools.extra.type;
+    expected = "derivation";
   };
   testModuleDevShellNames = {
     expr = builtins.sort builtins.lessThan (builtins.attrNames fullResult.devShells);
     expected = [
       "backend"
       "default"
+      "tools"
     ];
   };
   testModuleFormatterPresent = {
@@ -98,15 +111,49 @@ in
   testNixosModuleNames = {
     expr = builtins.sort builtins.lessThan (builtins.attrNames fullResult.nixosModules);
     expected = [
+      "core"
       "injected"
       "server"
     ];
+  };
+  testNestedNixosModuleName = {
+    expr = builtins.isPath fullResult.nixosModules.core.extra.foo;
+    expected = true;
   };
   testTemplateNames = {
     expr = builtins.sort builtins.lessThan (builtins.attrNames fullResult.templates);
     expected = [
       "default"
+      "group"
       "minimal"
+    ];
+  };
+  testNestedTemplate = {
+    expr = fullResult.templates.group.app.description;
+    expected = "A nested template";
+  };
+  testHostNamesFlattenInLeafMode = {
+    expr = builtins.sort builtins.lessThan (builtins.attrNames fullResult.nixosConfigurations);
+    expected = [
+      "app"
+      "custom"
+      "db"
+      "monitoring"
+      "myhost"
+      "mymac"
+    ];
+  };
+  testHostNamesHyphenatedMode = {
+    expr = builtins.sort builtins.lessThan (
+      builtins.attrNames hyphenatedHostsResult.nixosConfigurations
+    );
+    expected = [
+      "custom"
+      "db"
+      "group-app"
+      "monitoring"
+      "myhost"
+      "mymac"
     ];
   };
   testLibPresent = {
