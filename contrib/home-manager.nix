@@ -2,8 +2,16 @@
 # https://github.com/nix-community/home-manager
 {
   name = "home-manager";
+  inputs = {
+    scope = {
+      path = "../../scope";
+    };
+  };
   impl =
-    { ... }:
+    { results, ... }:
+    let
+      pkgs = results.scope.pkgs;
+    in
     {
       scanHostTypes = [
         {
@@ -24,6 +32,7 @@
             hm = inputs.home-manager or (throw "red-tape: home-manager contrib needs inputs.home-manager");
           in
           hm.lib.homeManagerConfiguration {
+            inherit pkgs;
             modules = [ info.configPath ];
             extraSpecialArgs = specialArgs // {
               hostName = name;
