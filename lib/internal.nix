@@ -11,6 +11,7 @@ let
     hasAttr
     intersectAttrs
     isAttrs
+    length
     listToAttrs
     map
     mapAttrs
@@ -109,9 +110,17 @@ let
   # Like scanDir but for hosts: walks subdirs looking for sentinel files
   # (e.g. configuration.nix) to determine host type.
   # Returns { name = { type; configPath; hostPath; }; ... }.
+  # Directories with multiple sentinel files return
+  # { name = { hosts = [ { type; configPath; hostPath; } ... ]; }; }.
   scanHosts =
     path: hostTypes:
     let
+      hostInfo = subPath: t: {
+        type = t.type;
+        configPath = subPath + "/${t.file}";
+        hostPath = subPath;
+      };
+
       scan =
         currentPath:
         if !pathExists currentPath then
@@ -137,11 +146,13 @@ let
                       { }
                     else
                       {
-                        "${name}" = {
-                          type = (head hits).type;
-                          configPath = subPath + "/${(head hits).file}";
-                          hostPath = subPath;
-                        };
+                        "${name}" =
+                          if length hits == 1 then
+                            hostInfo subPath (head hits)
+                          else
+                            {
+                              hosts = map (hostInfo subPath) hits;
+                            };
                       };
 
                   innerHosts = scan subPath;

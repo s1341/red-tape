@@ -96,6 +96,18 @@ let
     src = fixtures + "/home-manager";
     rootModule = mkRootModule [ redTape.modules.redTape.home-manager ];
     projectInputs = {
+      nixpkgs.lib.nixosSystem = args: {
+        _type = "nixos-system";
+        inherit (args) modules specialArgs;
+        config = {
+          nixpkgs.hostPlatform.system = "x86_64-linux";
+          system.build.toplevel = {
+            type = "derivation";
+            name = "alice-system";
+            meta = { };
+          };
+        };
+      };
       home-manager.lib.homeManagerConfiguration = args: {
         _type = "home-manager-configuration";
         inherit (args)
@@ -104,6 +116,8 @@ let
           extraSpecialArgs
           ;
       };
+    };
+  };
   hyphenatedHostsResult = evalFixture {
     src = fixtures + "/full";
     hostsOpts = {
@@ -174,16 +188,21 @@ in
   testHomeManagerContribOutput = {
     expr = {
       names = builtins.attrNames homeManagerResult.homeConfigurations;
+      nixosNames = builtins.attrNames homeManagerResult.nixosConfigurations;
       type = homeManagerResult.homeConfigurations.alice._type;
+      nixosType = homeManagerResult.nixosConfigurations.alice._type;
       pkgsSystem = homeManagerResult.homeConfigurations.alice.pkgs.system;
       hostName = homeManagerResult.homeConfigurations.alice.extraSpecialArgs.hostName;
     };
     expected = {
       names = [ "alice" ];
+      nixosNames = [ "alice" ];
       type = "home-manager-configuration";
+      nixosType = "nixos-system";
       pkgsSystem = "x86_64-linux";
       hostName = "alice";
     };
+  };
   testNestedTemplate = {
     expr = fullResult.templates.group.app.description;
     expected = "A nested template";

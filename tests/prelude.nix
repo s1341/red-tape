@@ -150,6 +150,7 @@ let
         );
 
       isHostInfo = x: x ? type && x ? configPath && x ? hostPath;
+      isHostGroup = x: x ? hosts;
 
       flattenHosts =
         prefix: tree:
@@ -168,44 +169,51 @@ let
                   info = value;
                 }
               ]
+            else if isHostGroup value then
+              map (info: {
+                inherit name info;
+              }) value.hosts
             else
               flattenHosts path value
           ) (attrNames tree)
         );
 
       hostEntries = flattenHosts [ ] discovered;
-      hostNames = map (h: h.name) hostEntries;
-      duplicateNames = filter (n: length (filter (m: m == n) hostNames) > 1) hostNames;
-      duplicateHostNames = attrNames (
+      loadedEntries = map (
+        h:
+        let
+          loaded = loadHost h.name h.info;
+        in
+        {
+          inherit (h) name info;
+          inherit (loaded) type outputKey value;
+        }
+      ) hostEntries;
+      hostKeys = map (h: "${h.outputKey}/${h.name}") loadedEntries;
+      duplicateKeys = filter (n: length (filter (m: m == n) hostKeys) > 1) hostKeys;
+      duplicateHostKeys = attrNames (
         listToAttrs (
           map (name: {
             inherit name;
             value = null;
-          }) duplicateNames
+          }) duplicateKeys
         )
       );
 
-      checkedHostEntries =
-        if duplicateHostNames == [ ] then
-          hostEntries
+      checkedLoadedEntries =
+        if duplicateHostKeys == [ ] then
+          loadedEntries
         else if hostNameMode == "leaf" then
-          throw "red-tape: duplicate host names are not allowed in leaf mode: ${concatStringsSep ", " duplicateHostNames}"
+          throw "red-tape: duplicate host names are not allowed in leaf mode: ${concatStringsSep ", " duplicateHostKeys}"
         else
-          throw "red-tape: duplicate hyphenated host names: ${concatStringsSep ", " duplicateHostNames}";
-
-      loaded = listToAttrs (
-        map (h: {
-          inherit (h) name;
-          value = loadHost h.name h.info;
-        }) checkedHostEntries
-      );
+          throw "red-tape: duplicate hyphenated host names: ${concatStringsSep ", " duplicateHostKeys}";
 
       outputKeys = attrNames (
         listToAttrs (
-          map (n: {
-            name = loaded.${n}.outputKey;
+          map (h: {
+            name = h.outputKey;
             value = null;
-          }) (attrNames loaded)
+          }) checkedLoadedEntries
         )
       );
 
@@ -214,18 +222,18 @@ let
         listToAttrs (
           filter (x: x != null) (
             map (
-              n:
+              h:
               let
-                h = loaded.${n};
+                value = h;
               in
-              if h.outputKey == key then
+              if value.outputKey == key then
                 {
-                  name = n;
-                  value = h.value;
+                  name = value.name;
+                  value = value.value;
                 }
               else
                 null
-            ) (attrNames loaded)
+            ) checkedLoadedEntries
           )
         );
 
@@ -235,19 +243,19 @@ let
         system:
         listToAttrs (filter (x: x != null) (
           map (
-            n:
+            h:
             let
-              h = loaded.${n};
-              s = h.value.config.nixpkgs.hostPlatform.system or null;
+              value = h;
+              s = value.value.config.nixpkgs.hostPlatform.system or null;
             in
             if s == system then
               {
-                name = "${h.type}-${n}";
-                value = h.value.config.system.build.toplevel;
+                name = "${value.type}-${value.name}";
+                value = value.value.config.system.build.toplevel;
               }
             else
               null
-          ) (attrNames loaded)
+          ) checkedLoadedEntries
         )) { } (attrNames byOutputKey);
     in
     byOutputKey // { inherit autoChecks; };
