@@ -4,6 +4,7 @@ let
   inherit (discover) scanDir;
   fixtures = ../tests/fixtures;
   full = fixtures + "/full";
+  recursive = fixtures + "/recursive-scan";
 in
 {
   testPackages = {
@@ -67,6 +68,57 @@ in
       package = "file";
       devshell = "file";
       check = "file";
+    };
+  };
+
+  testRecursiveShape = {
+    expr =
+      let
+        packages = scanDir (recursive + "/packages");
+      in
+      {
+        branch = packages.branch.leaf.tool.type;
+        mergeA = packages.merge.a.tool.type;
+        mergeB = packages.merge.b.tool.type;
+      };
+    expected = {
+      branch = "file";
+      mergeA = "file";
+      mergeB = "file";
+    };
+  };
+
+  testDirectoryEntryStopsRecursion = {
+    expr =
+      let
+        entry = (scanDir (recursive + "/packages")).dir-entry;
+      in
+      {
+        inherit (entry) type;
+        hasNested = entry ? nested;
+      };
+    expected = {
+      type = "directory";
+      hasNested = false;
+    };
+  };
+
+  testFilePrecedenceOverDirectoryStem = {
+    expr =
+      let
+        packages = scanDir (recursive + "/packages");
+      in
+      {
+        sameStem = packages.same-stem.type;
+        sameStemPath = packages.same-stem.path == recursive + "/packages/same-stem.nix";
+        fileVsBranch = packages.file-vs-branch.type;
+        fileVsBranchPath = packages.file-vs-branch.path == recursive + "/packages/file-vs-branch.nix";
+      };
+    expected = {
+      sameStem = "file";
+      sameStemPath = true;
+      fileVsBranch = "file";
+      fileVsBranchPath = true;
     };
   };
 }
